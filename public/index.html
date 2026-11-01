@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Đăng bài Facebook Group</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/routes.css">
   <style>.dry-run{display:flex!important;align-items:center;gap:10px;margin:18px 0 12px!important;cursor:pointer}.dry-run[hidden]{display:none!important}.card .dry-run input{width:auto!important;box-shadow:none!important}.dry-run span{font-weight:600}</style>
 </head>
 <body>
@@ -14,10 +15,10 @@
   </header>
   <main class="shell">
     <nav class="tabs" aria-label="Mục chính">
-      <button class="active" data-tab="publish">Đăng bài</button>
-      <button data-tab="products">Mặt hàng</button>
-      <button data-tab="regions">Khu vực & group</button>
-      <button data-tab="history">Lịch sử</button>
+      <a href="/dang-bai" data-tab="publish">Đăng bài</a>
+      <a href="/mat-hang" data-tab="products">Mặt hàng</a>
+      <a href="/khu-vuc" data-tab="regions">Khu vực & group</a>
+      <a href="/lich-su" data-tab="history">Lịch sử</a>
     </nav>
     <div id="notice" role="status" aria-live="polite"></div>
 
@@ -76,7 +77,7 @@
       </div>
     </section>
 
-    <section id="history" class="panel"><div class="section-title"><div><h1>Lịch sử đăng</h1><p>Lưu kết quả từng group. Bạn vẫn có thể đăng lại cùng mặt hàng bất cứ lúc nào.</p></div></div><div id="history-list"></div></section>
+    <section id="history" class="panel"><div class="section-title"><div><h1>Lịch sử đăng</h1><p>Lưu kết quả từng group. Bạn vẫn có thể đăng lại cùng mặt hàng bất cứ lúc nào.</p></div></div><div id="history-list"></div><div id="history-pager" class="pager"></div></section>
   </main>
   <script type="module" src="/app.js"></script>
 </body>

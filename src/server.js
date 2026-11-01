@@ -45,6 +45,8 @@ app.get('/uploads/:name', async (req, res) => {
   if (!image) return res.sendStatus(404);
   res.type(image.mime); res.send(image.body);
 });
+app.get('/', (_req, res) => res.redirect('/dang-bai'));
+app.get(['/dang-bai', '/mat-hang', '/khu-vuc', '/lich-su'], (_req, res) => res.sendFile(resolve(root, 'public', 'index.html')));
 app.use(express.static(resolve(root, 'public')));
 
 function text(value, max = 20000) { return typeof value === 'string' ? value.trim().slice(0, max) : ''; }
@@ -56,7 +58,37 @@ function validImages(images) {
   return Array.isArray(images) && images.every(name => typeof name === 'string' && /^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif|heic)$/i.test(name));
 }
 
-app.get('/api/state', (_req, res) => res.json({ ...state, activeRun, localPreviewAvailable: !process.env.RAILWAY_ENVIRONMENT && process.env.HOST !== '0.0.0.0' }));
+app.get('/api/products', (_req, res) => res.json(state.products.map(product => ({
+  id: product.id, name: product.name, imageCount: product.images.length,
+  variantCount: Object.keys(product.variants ?? {}).length
+}))));
+app.get('/api/products/:id', (req, res) => {
+  const product = findProduct(req.params.id);
+  return product ? res.json(product) : error(res, 'Không tìm thấy mặt hàng.', 404);
+});
+app.get('/api/regions', (_req, res) => res.json(state.regions.map(region => ({
+  id: region.id, name: region.name, groupCount: region.groups.length
+}))));
+app.get('/api/regions/:id', (req, res) => {
+  const region = findRegion(req.params.id);
+  return region ? res.json(region) : error(res, 'Không tìm thấy khu vực.', 404);
+});
+app.get('/api/active-run', (_req, res) => res.json({
+  run: state.runs.find(run => run.id === activeRun) ?? null,
+  localPreviewAvailable: !process.env.RAILWAY_ENVIRONMENT && process.env.HOST !== '0.0.0.0'
+}));
+app.get('/api/runs', (req, res) => {
+  const offset = Math.max(0, Number.parseInt(req.query.offset, 10) || 0);
+  const limit = Math.min(50, Math.max(1, Number.parseInt(req.query.limit, 10) || 20));
+  res.json({ total: state.runs.length, offset, limit, items: state.runs.slice(offset, offset + limit).map(run => ({
+    id: run.id, productName: run.productName, regionName: run.regionName,
+    dryRun: run.dryRun, status: run.status, startedAt: run.startedAt, itemCount: run.items.length
+  })) });
+});
+app.get('/api/runs/:id', (req, res) => {
+  const run = state.runs.find(item => item.id === req.params.id);
+  return run ? res.json(run) : error(res, 'Không tìm thấy lượt đăng.', 404);
+});
 
 app.post('/api/products', async (req, res) => {
   const name = text(req.body.name, 150);

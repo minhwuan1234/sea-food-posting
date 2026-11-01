@@ -13,7 +13,7 @@ npm run login
 npm start
 ```
 
-Mở `http://127.0.0.1:4173`. Lệnh `login` mở Chromium để bạn tự đăng nhập Facebook; quay lại Terminal và nhấn Enter sau khi vào được tài khoản. Phiên được lưu trong `data/facebook-profile` trên Mac.
+Mở `http://127.0.0.1:4173/dang-bai`. Lệnh `login` mở Chromium để bạn tự đăng nhập Facebook; quay lại Terminal và nhấn Enter sau khi vào được tài khoản. Phiên được lưu trong `data/facebook-profile` trên Mac.
 
 ## Triển khai Railway
 
@@ -39,6 +39,8 @@ PostgreSQL lưu mặt hàng, khu vực, lịch sử và ảnh. Ảnh được l�
 Chi tiết các bảng và cách chuyển dữ liệu từ bản JSONB cũ: [DATABASE.md](DATABASE.md).
 
 ## Sử dụng
+
+Mỗi tab có URL riêng: `/dang-bai`, `/mat-hang`, `/khu-vuc`, `/lich-su`. Trang chỉ gọi API cho dữ liệu cần hiển thị; lịch sử tải 20 lượt mỗi trang và chỉ tải chi tiết khi mở một lượt. Server giữ dữ liệu vận hành trong bộ nhớ sau lúc khởi động để không đọc lại toàn bộ PostgreSQL khi chuyển tab.
 
 1. Trong **Khu vực & group**, tạo khu vực rồi thêm link group `https://www.facebook.com/groups/...`.
 2. Trong **Mặt hàng**, lưu tên, caption và thêm nhiều ảnh. Có thể đặt caption và ảnh riêng cho một khu vực.
