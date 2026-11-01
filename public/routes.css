@@ -1,4 +1,0 @@
-.tabs a{display:inline-block;border:0;background:transparent;color:#617087;padding:12px 16px;font-weight:650;border-bottom:3px solid transparent;text-decoration:none}
-.tabs a.active{color:#2365dc;border-color:#2365dc}
-.pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;color:#718096;font-size:13px}
-.pager button{border:1px solid #c8d4e5;background:#fff;color:#2856a0;border-radius:8px;padding:8px 12px;font-weight:650}

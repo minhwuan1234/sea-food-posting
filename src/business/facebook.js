@@ -1,17 +1,10 @@
 import { chromium } from 'playwright';
 import { resolve } from 'node:path';
-import { dataDir, imageBuffer } from './store.js';
+import { dataDir, imageBuffer } from '../database/store.js';
+import { validGroupUrl } from './validation.js';
 
 const profileDir = resolve(dataDir, 'facebook-profile');
 const posterNames = /^(đăng|post|đăng bài|post now)$/i;
-
-export function validGroupUrl(value) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' && ['facebook.com', 'www.facebook.com', 'm.facebook.com'].includes(url.hostname)
-      && /^\/groups\/[^/]+/.test(url.pathname);
-  } catch { return false; }
-}
 
 async function firstVisible(locators) {
   for (const locator of locators) {

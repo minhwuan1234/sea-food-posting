@@ -38,6 +38,8 @@ PostgreSQL lưu mặt hàng, khu vực, lịch sử và ảnh. Ảnh được l�
 
 Chi tiết các bảng và cách chuyển dữ liệu từ bản JSONB cũ: [DATABASE.md](DATABASE.md).
 
+Tài liệu giao diện nằm trong một file [DESIGN.md](DESIGN.md). Cây mã và quy ước ba lớp được mô tả riêng tại [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## Sử dụng
 
 Mỗi tab có URL riêng: `/dang-bai`, `/mat-hang`, `/khu-vuc`, `/lich-su`. Trang chỉ gọi API cho dữ liệu cần hiển thị; lịch sử tải 20 lượt mỗi trang và chỉ tải chi tiết khi mở một lượt. Server giữ dữ liệu vận hành trong bộ nhớ sau lúc khởi động để không đọc lại toàn bộ PostgreSQL khi chuyển tab.

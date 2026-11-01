@@ -4,11 +4,11 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "login": "node src/cli.js login",
-    "post": "node src/cli.js post",
-    "export-auth": "node src/export-auth.js",
-    "start": "node src/server.js",
-    "check": "node --check src/cli.js && node --check src/server.js && node --check src/facebook.js && node --check src/store.js && node --check src/export-auth.js && node --check public/app.js"
+    "login": "node src/surface/cli.js login",
+    "post": "node src/surface/cli.js post",
+    "export-auth": "node src/surface/export-auth.js",
+    "start": "node src/surface/server.js",
+    "check": "find src public/js -name '*.js' -print0 | xargs -0 -n1 node --check"
   },
   "dependencies": {
     "express": "^5.3.0",

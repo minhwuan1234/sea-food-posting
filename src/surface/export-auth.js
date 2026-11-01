@@ -1,7 +1,7 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { dataDir } from './store.js';
+import { dataDir } from '../database/store.js';
 
 mkdirSync(dataDir, { recursive: true });
 const profileDir = resolve(dataDir, 'facebook-profile');

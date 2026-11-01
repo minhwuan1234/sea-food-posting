@@ -3,7 +3,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
-export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+export const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const dataDir = resolve(root, 'data');
 export const uploadDir = resolve(dataDir, 'uploads');
 const stateFile = resolve(dataDir, 'state.json');

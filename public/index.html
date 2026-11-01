@@ -3,82 +3,70 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Đăng bài Facebook Group</title>
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/routes.css">
-  <style>.dry-run{display:flex!important;align-items:center;gap:10px;margin:18px 0 12px!important;cursor:pointer}.dry-run[hidden]{display:none!important}.card .dry-run input{width:auto!important;box-shadow:none!important}.dry-run span{font-weight:600}</style>
+  <meta name="theme-color" content="#000000">
+  <title>Sea Food Posting</title>
+  <link rel="stylesheet" href="/css/tokens.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/pages.css">
 </head>
 <body>
-  <header class="topbar">
-    <div><span class="mark">FB</span><span><strong>Sea Food Posting</strong><small>Quản lý bài đăng Facebook Group</small></span></div>
-    <span class="local">● Bảng điều khiển</span>
+  <header class="global-nav">
+    <div class="nav-inner"><span class="brand-mark" aria-hidden="true">SF</span><strong>Sea Food Posting</strong><span class="nav-spacer"></span><span class="nav-context">Quản lý Facebook Group</span></div>
   </header>
-  <main class="shell">
-    <nav class="tabs" aria-label="Mục chính">
+  <div class="sub-nav">
+    <div class="nav-inner"><span class="workspace-name">Bảng điều khiển</span><nav class="tabs" aria-label="Mục chính">
       <a href="/dang-bai" data-tab="publish">Đăng bài</a>
       <a href="/mat-hang" data-tab="products">Mặt hàng</a>
       <a href="/khu-vuc" data-tab="regions">Khu vực & group</a>
       <a href="/lich-su" data-tab="history">Lịch sử</a>
-    </nav>
+    </nav></div>
+  </div>
+  <main class="shell">
     <div id="notice" role="status" aria-live="polite"></div>
 
-    <section id="publish" class="panel active">
-      <div class="section-title"><div><h1>Đăng bài</h1><p>Chọn một mặt hàng và một khu vực. Mỗi group được đăng lần lượt, cách nhau 15 giây.</p></div></div>
-      <div class="grid two">
-        <div class="card">
+    <section id="publish" class="panel">
+      <div class="section-intro"><span class="eyebrow">ĐĂNG BÀI</span><h1>Đăng bài theo khu vực.</h1><p>Chọn mặt hàng, chọn khu vực, kiểm tra nội dung rồi bắt đầu. Mỗi group cách nhau 15 giây.</p></div>
+      <div class="publish-layout">
+        <div id="publish-preview" class="preview-stage"></div>
+        <aside class="control-panel"><span class="eyebrow">THIẾT LẬP LƯỢT ĐĂNG</span><h2>Chọn nội dung</h2>
           <label for="publish-product">Mặt hàng</label><select id="publish-product"></select>
           <label for="publish-region">Khu vực</label><select id="publish-region"></select>
-          <div id="publish-preview" class="preview empty">Tạo mặt hàng và khu vực để xem trước bài đăng.</div>
-          <label id="dry-run-option" class="dry-run"><input id="dry-run" type="checkbox" checked><span>Chạy thử trên Mac — điền bài để xem, không bấm Đăng</span></label>
+          <label id="dry-run-option" class="dry-run"><input id="dry-run" type="checkbox" checked><span>Chạy thử trên Mac, không bấm Đăng</span></label>
           <button id="start-run" class="primary">Đăng vào khu vực này</button>
-          <p id="run-hint" class="hint">Hãy kiểm tra caption, ảnh và danh sách group trước khi bấm.</p>
-        </div>
-        <div class="card"><h2>Tiến độ</h2><div id="run-progress" class="muted">Chưa có lượt đăng đang chạy.</div></div>
+          <p id="run-hint" class="hint"></p>
+        </aside>
       </div>
+      <div class="progress-section"><div class="section-heading"><span class="eyebrow">TRẠNG THÁI</span><h2>Tiến độ đăng</h2></div><div id="run-progress"></div></div>
     </section>
 
     <section id="products" class="panel">
-      <div class="section-title"><div><h1>Mặt hàng</h1><p>Lưu caption và nhiều ảnh. Có thể chỉnh riêng cho từng khu vực.</p></div><button id="new-product" class="secondary">+ Mặt hàng mới</button></div>
-      <div class="grid two">
-        <div class="card"><h2>Danh sách mặt hàng</h2><div id="product-list"></div></div>
-        <div class="card">
-          <h2 id="product-form-title">Mặt hàng mới</h2>
-          <form id="product-form">
-            <label for="product-name">Tên mặt hàng</label><input id="product-name" required maxlength="150" placeholder="Ví dụ: Bàn làm việc gỗ">
-            <label for="product-caption">Caption mặc định</label><textarea id="product-caption" required rows="8" placeholder="Mô tả, giá, liên hệ..."></textarea>
-            <button class="primary" type="submit">Lưu mặt hàng</button>
-          </form>
-          <div id="product-assets" hidden>
-            <hr><h3>Ảnh mặc định</h3><div id="product-images" class="images"></div>
-            <label class="upload">+ Thêm ảnh<input id="product-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic" multiple hidden></label>
-            <hr><h3>Tùy chỉnh theo khu vực</h3>
-            <label for="variant-region">Khu vực</label><select id="variant-region"></select>
-            <label for="variant-caption">Caption khu vực (để trống để dùng mặc định)</label><textarea id="variant-caption" rows="6"></textarea>
-            <button id="save-variant" class="secondary" type="button">Lưu caption khu vực</button>
-            <p class="hint">Nếu thêm ảnh riêng, khu vực này sẽ dùng bộ ảnh đó thay cho ảnh mặc định.</p>
-            <div id="variant-images" class="images"></div>
-            <label class="upload">+ Thêm ảnh riêng<input id="variant-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic" multiple hidden></label>
+      <div class="section-intro split"><div><span class="eyebrow">MẶT HÀNG</span><h1>Mỗi sản phẩm, một câu chuyện.</h1><p>Lưu tên, caption và nhiều ảnh. Tùy chỉnh riêng khi cần đăng theo khu vực.</p></div><button id="new-product" class="secondary">+ Mặt hàng mới</button></div>
+      <div class="workspace-grid">
+        <div class="workspace-pane"><div class="section-heading"><h2>Thư viện mặt hàng</h2></div><div id="product-list"></div></div>
+        <div class="editor-pane"><div class="section-heading"><span class="eyebrow">NỘI DUNG</span><h2 id="product-form-title">Mặt hàng mới</h2></div>
+          <form id="product-form"><label for="product-name">Tên mặt hàng</label><input id="product-name" required maxlength="150" placeholder="Ví dụ: Mực tươi"><label for="product-caption">Caption mặc định</label><textarea id="product-caption" required rows="7" placeholder="Mô tả, giá, liên hệ..."></textarea><button class="primary" type="submit">Lưu mặt hàng</button></form>
+          <div id="product-assets" hidden><div class="editor-divider"></div><h3>Ảnh mặc định</h3><div id="product-images" class="images"></div><label class="upload">+ Thêm ảnh<input id="product-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic" multiple hidden></label>
+            <div class="editor-divider"></div><h3>Tùy chỉnh theo khu vực</h3><label for="variant-region">Khu vực</label><select id="variant-region"></select><label for="variant-caption">Caption khu vực</label><textarea id="variant-caption" rows="5" placeholder="Để trống để dùng caption mặc định"></textarea><button id="save-variant" class="secondary" type="button">Lưu caption khu vực</button><p class="hint">Nếu thêm ảnh riêng, khu vực này sẽ dùng bộ ảnh đó thay cho ảnh mặc định.</p><div id="variant-images" class="images"></div><label class="upload">+ Thêm ảnh riêng<input id="variant-upload" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic" multiple hidden></label>
           </div>
         </div>
       </div>
     </section>
 
     <section id="regions" class="panel">
-      <div class="section-title"><div><h1>Khu vực & group</h1><p>Tự tạo khu vực và thay đổi danh sách group bất cứ lúc nào.</p></div><button id="new-region" class="secondary">+ Khu vực mới</button></div>
-      <div class="grid two">
-        <div class="card"><h2>Danh sách khu vực</h2><div id="region-list"></div></div>
-        <div class="card">
-          <h2 id="region-form-title">Khu vực mới</h2>
+      <div class="section-intro split"><div><span class="eyebrow">KHU VỰC</span><h1>Nhóm gọn theo nơi bán.</h1><p>Mỗi khu vực là một nhánh chứa tên và URL của các group. Bạn có thể thay đổi danh sách bất cứ lúc nào.</p></div><button id="new-region" class="secondary">+ Khu vực mới</button></div>
+      <div class="workspace-grid">
+        <div class="workspace-pane"><div class="section-heading"><h2>Sơ đồ khu vực</h2></div><div id="region-list"></div></div>
+        <div class="editor-pane"><div class="section-heading"><span class="eyebrow">CHI TIẾT NHÁNH</span><h2 id="region-form-title">Khu vực mới</h2></div>
           <form id="region-form"><label for="region-name">Tên khu vực</label><input id="region-name" required maxlength="150" placeholder="Ví dụ: TP.HCM"><button class="primary" type="submit">Lưu khu vực</button></form>
-          <div id="group-manager" hidden><hr><h3>Group trong khu vực</h3><div id="group-list"></div>
-            <form id="group-form"><label for="group-name">Tên group</label><input id="group-name" required maxlength="150" placeholder="Tên để bạn dễ nhận biết"><label for="group-url">Link group</label><input id="group-url" type="url" required placeholder="https://www.facebook.com/groups/..."><button class="secondary" type="submit">+ Thêm group</button></form>
-          </div>
+          <div id="group-manager" hidden><div class="editor-divider"></div><h3>Group trong khu vực</h3><div id="group-list"></div><form id="group-form"><label for="group-name">Tên group</label><input id="group-name" required maxlength="150" placeholder="Tên để bạn dễ nhận biết"><label for="group-url">URL group</label><input id="group-url" type="url" required placeholder="https://www.facebook.com/groups/..."><button class="secondary" type="submit">+ Thêm group</button></form></div>
         </div>
       </div>
     </section>
 
-    <section id="history" class="panel"><div class="section-title"><div><h1>Lịch sử đăng</h1><p>Lưu kết quả từng group. Bạn vẫn có thể đăng lại cùng mặt hàng bất cứ lúc nào.</p></div></div><div id="history-list"></div><div id="history-pager" class="pager"></div></section>
+    <section id="history" class="panel"><div class="section-intro"><span class="eyebrow">LỊCH SỬ</span><h1>Mọi lượt đăng, rõ ràng.</h1><p>Xem kết quả từng group. Bạn vẫn có thể đăng lại cùng mặt hàng bất cứ lúc nào.</p></div><div id="history-list"></div><div id="history-pager" class="pager"></div></section>
   </main>
-  <script type="module" src="/app.js"></script>
+  <footer class="footer"><span>Sea Food Posting</span><span>Quản lý nội dung theo mặt hàng và khu vực.</span></footer>
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>
