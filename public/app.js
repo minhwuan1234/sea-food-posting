@@ -96,20 +96,25 @@ function renderPublish() {
     preview.className = 'preview';
     preview.innerHTML = `<strong>${escape(product.name)} → ${escape(region.name)}</strong><div class="caption">${escape(content.caption)}</div><div class="images">${imageMarkup(content.images)}</div><p class="hint">${region.groups.length} group · ${content.images.length} ảnh</p><small>${region.groups.map(group => escape(group.name)).join(' · ')}</small>`;
   }
+  $('#dry-run-option').hidden = !state.localPreviewAvailable;
+  const dryRun = state.localPreviewAvailable && $('#dry-run').checked;
+  $('#start-run').textContent = dryRun ? 'Chạy thử khu vực này' : 'Đăng vào khu vực này';
+  $('#run-hint').textContent = dryRun ? 'Playwright sẽ điền bài trong Chromium và dừng trước nút Đăng. Xem xong, bấm Tiếp tục trên giao diện.' : 'Nút này bắt đầu đăng thật. Hãy kiểm tra caption, ảnh và danh sách group trước khi bấm.';
   $('#start-run').disabled = !product || !region?.groups.length || !!state.activeRun;
   const run = state.runs.find(item => item.id === state.activeRun);
   if (!run) { $('#run-progress').textContent = 'Chưa có lượt đăng đang chạy.'; return; }
-  const done = run.items.filter(item => ['submitted', 'failed', 'cancelled'].includes(item.status)).length;
+  const done = run.items.filter(item => ['submitted', 'previewed', 'failed', 'cancelled'].includes(item.status)).length;
   const next = run.nextAt ? Math.max(0, Math.ceil((new Date(run.nextAt).getTime() - Date.now()) / 1000)) : null;
-  $('#run-progress').innerHTML = `<strong>${escape(run.productName)} · ${escape(run.regionName)}</strong><p>${done}/${run.items.length} group đã xử lý${next !== null ? ` · group tiếp theo sau ${next}s` : ''}</p>${run.items.map(item => `<div class="run-row"><span>${escape(item.groupName)}</span><span class="status ${escape(item.status)}">${statusText(item.status)}</span></div>`).join('')}<button id="stop-run" class="danger" style="margin-top:16px">Dừng sau group hiện tại</button>`;
+  const previewOpen = run.items.some(item => ['preview', 'preview_error'].includes(item.status));
+  $('#run-progress').innerHTML = `<strong>${run.dryRun ? 'Chạy thử · ' : ''}${escape(run.productName)} · ${escape(run.regionName)}</strong><p>${done}/${run.items.length} group đã xử lý${next !== null ? ` · group tiếp theo sau ${next}s` : ''}</p>${run.items.map(item => `<div class="run-row"><span>${escape(item.groupName)}</span><span class="status ${escape(item.status)}">${statusText(item.status)}</span></div>`).join('')}${previewOpen ? '<button id="continue-run" class="primary" style="margin-top:16px">Đã xem xong · Tiếp tục</button> ' : ''}<button id="stop-run" class="danger" style="margin-top:16px">Dừng sau group hiện tại</button>`;
 }
 
 function statusText(status) {
-  return ({ starting: 'Đang mở', running: 'Đang xử lý', submitted: 'Đã gửi', failed: 'Lỗi', pending: 'Chờ', cancelled: 'Đã bỏ qua', finished: 'Hoàn tất', stopped: 'Đã dừng' })[status] || status;
+  return ({ starting: 'Đang mở', running: 'Đang xử lý', preview: 'Đang xem thử', preview_error: 'Cần kiểm tra', previewed: 'Đã xem thử', submitted: 'Đã gửi', failed: 'Lỗi', pending: 'Chờ', cancelled: 'Đã bỏ qua', finished: 'Hoàn tất', stopped: 'Đã dừng' })[status] || status;
 }
 
 function renderHistory() {
-  $('#history-list').innerHTML = state.runs.length ? state.runs.map(run => `<article class="run-card"><div class="run-head"><div><h2>${escape(run.productName)} · ${escape(run.regionName)}</h2><small>${new Date(run.startedAt).toLocaleString('vi-VN')} · ${run.items.length} group</small></div><span class="status ${escape(run.status)}">${statusText(run.status)}</span></div><details><summary>Xem nội dung và kết quả</summary><p class="caption">${escape(run.caption)}</p><div class="images">${imageMarkup(run.images)}</div>${run.error ? `<p class="status failed">${escape(run.error)}</p>` : ''}${run.items.map(item => `<div class="run-row"><span><strong>${escape(item.groupName)}</strong><br><small>${escape(item.message || '')}</small></span><span class="status ${escape(item.status)}">${statusText(item.status)}</span></div>`).join('')}</details></article>`).join('') : '<div class="card muted">Chưa có lượt đăng nào.</div>';
+  $('#history-list').innerHTML = state.runs.length ? state.runs.map(run => `<article class="run-card"><div class="run-head"><div><h2>${run.dryRun ? 'Chạy thử · ' : ''}${escape(run.productName)} · ${escape(run.regionName)}</h2><small>${new Date(run.startedAt).toLocaleString('vi-VN')} · ${run.items.length} group</small></div><span class="status ${escape(run.status)}">${statusText(run.status)}</span></div><details><summary>Xem nội dung và kết quả</summary><p class="caption">${escape(run.caption)}</p><div class="images">${imageMarkup(run.images)}</div>${run.error ? `<p class="status failed">${escape(run.error)}</p>` : ''}${run.items.map(item => `<div class="run-row"><span><strong>${escape(item.groupName)}</strong><br><small>${escape(item.message || '')}</small></span><span class="status ${escape(item.status)}">${statusText(item.status)}</span></div>`).join('')}</details></article>`).join('') : '<div class="card muted">Chưa có lượt đăng nào.</div>';
 }
 
 document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => {
@@ -214,14 +219,21 @@ $('#group-list').addEventListener('click', event => act(async () => {
 
 $('#publish-product').addEventListener('change', event => { selectedProduct = event.target.value; renderPublish(); });
 $('#publish-region').addEventListener('change', event => { selectedRegion = event.target.value; renderPublish(); });
+$('#dry-run').addEventListener('change', renderPublish);
 $('#start-run').addEventListener('click', () => act(async () => {
   const region = state.regions.find(r => r.id === selectedRegion);
   const product = state.products.find(p => p.id === selectedProduct);
-  if (!confirm(`Đăng thật bài “${product.name}” vào ${region.groups.length} group thuộc ${region.name}?`)) return;
-  await api('/runs', { method: 'POST', body: { productId: product.id, regionId: region.id } });
-  await refresh(false); notice('Đã bắt đầu lượt đăng. Chromium sẽ mở trên máy Mac.');
+  const dryRun = state.localPreviewAvailable && $('#dry-run').checked;
+  if (!dryRun && !confirm(`Đăng thật bài “${product.name}” vào ${region.groups.length} group thuộc ${region.name}?`)) return;
+  await api('/runs', { method: 'POST', body: { productId: product.id, regionId: region.id, dryRun } });
+  await refresh(false); notice(dryRun ? 'Đã bắt đầu chạy thử. Chromium sẽ mở và không bấm Đăng.' : 'Đã bắt đầu lượt đăng. Chromium sẽ mở trên máy Mac.');
 }));
 $('#run-progress').addEventListener('click', event => act(async () => {
+  if (event.target.id === 'continue-run') {
+    await api(`/runs/${state.activeRun}/continue`, { method: 'POST' });
+    notice('Đã kết thúc bản xem thử hiện tại.');
+    return;
+  }
   if (event.target.id !== 'stop-run') return;
   await api(`/runs/${state.activeRun}/stop`, { method: 'POST' }); notice('Đã yêu cầu dừng sau group hiện tại.');
 }));

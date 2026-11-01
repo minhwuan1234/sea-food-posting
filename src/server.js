@@ -20,6 +20,7 @@ for (const run of state.runs) {
 await saveState(state);
 let activeRun = null;
 let stopRequested = false;
+let previewResolve = null;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024, files: 20 },
@@ -55,7 +56,7 @@ function validImages(images) {
   return Array.isArray(images) && images.every(name => typeof name === 'string' && /^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif|heic)$/i.test(name));
 }
 
-app.get('/api/state', (_req, res) => res.json({ ...state, activeRun }));
+app.get('/api/state', (_req, res) => res.json({ ...state, activeRun, localPreviewAvailable: !process.env.RAILWAY_ENVIRONMENT && process.env.HOST !== '0.0.0.0' }));
 
 app.post('/api/products', async (req, res) => {
   const name = text(req.body.name, 150);
@@ -187,8 +188,26 @@ async function executeRun(run, caption, images) {
       if (stopRequested) { item.status = 'cancelled'; continue; }
       item.status = 'running'; item.startedAt = new Date().toISOString(); await publish();
       try {
-        item.message = await postToGroup(browserSession.context, item.url, caption, images);
-        item.status = 'submitted';
+        item.message = await postToGroup(browserSession.context, item.url, caption, images, {
+          dryRun: run.dryRun,
+          onPrepared: async () => {
+            item.status = 'preview';
+            item.message = 'Đã điền bài trong Chromium. Xem thử rồi bấm Tiếp tục trên giao diện; Playwright sẽ không bấm Đăng.';
+            const wait = new Promise(resolve => { previewResolve = resolve; });
+            await publish();
+            await wait;
+            previewResolve = null;
+          },
+          onError: async err => {
+            item.status = 'preview_error';
+            item.message = `${err.message} — Chromium đang giữ trang mở để bạn kiểm tra. Bấm Tiếp tục khi xem xong.`;
+            const wait = new Promise(resolve => { previewResolve = resolve; });
+            await publish();
+            await wait;
+            previewResolve = null;
+          }
+        });
+        item.status = run.dryRun ? 'previewed' : 'submitted';
       } catch (err) {
         item.message = err.message; item.status = 'failed';
       }
@@ -207,6 +226,7 @@ async function executeRun(run, caption, images) {
     run.finishedAt = new Date().toISOString(); run.nextAt = null;
     await publish();
     await browserSession?.close().catch(() => {});
+    previewResolve = null;
     activeRun = null; stopRequested = false;
   }
 }
@@ -216,13 +236,15 @@ app.post('/api/runs', async (req, res) => {
   const product = findProduct(req.body.productId);
   const region = findRegion(req.body.regionId);
   if (!product || !region) return error(res, 'Chọn mặt hàng và khu vực hợp lệ.');
+  const dryRun = req.body.dryRun === true;
+  if (dryRun && (process.env.RAILWAY_ENVIRONMENT || process.env.HOST === '0.0.0.0')) return error(res, 'Chế độ xem thử bằng Chromium chỉ chạy trên Mac local.');
   if (!region.groups.length) return error(res, 'Khu vực chưa có group.');
   const variant = product.variants[region.id];
   const caption = variant?.caption || product.caption;
   const images = variant?.images?.length ? variant.images : product.images;
   if (!caption) return error(res, 'Bài đăng chưa có caption.');
   const run = {
-    id: randomUUID(), productId: product.id, productName: product.name,
+    id: randomUUID(), productId: product.id, productName: product.name, dryRun,
     regionId: region.id, regionName: region.name, caption, images: [...images],
     status: 'starting', startedAt: new Date().toISOString(), finishedAt: null, nextAt: null,
     items: region.groups.map(group => ({ groupId: group.id, groupName: group.name, url: group.url, status: 'pending' }))
@@ -234,7 +256,12 @@ app.post('/api/runs', async (req, res) => {
 
 app.post('/api/runs/:id/stop', (req, res) => {
   if (activeRun !== req.params.id) return error(res, 'Lượt đăng này không đang chạy.', 409);
-  stopRequested = true; res.json({ ok: true });
+  stopRequested = true; previewResolve?.(); res.json({ ok: true });
+});
+
+app.post('/api/runs/:id/continue', (req, res) => {
+  if (activeRun !== req.params.id || !previewResolve) return error(res, 'Chưa có bản xem thử đang chờ.', 409);
+  previewResolve(); res.json({ ok: true });
 });
 
 app.use((err, _req, res, _next) => error(res, err.message || 'Lỗi máy chủ.', 500));

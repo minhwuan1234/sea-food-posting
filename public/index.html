@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Đăng bài Facebook Group</title>
   <link rel="stylesheet" href="/style.css">
+  <style>.dry-run{display:flex!important;align-items:center;gap:10px;margin:18px 0 12px!important;cursor:pointer}.dry-run[hidden]{display:none!important}.card .dry-run input{width:auto!important;box-shadow:none!important}.dry-run span{font-weight:600}</style>
 </head>
 <body>
   <header class="topbar">
@@ -27,8 +28,9 @@
           <label for="publish-product">Mặt hàng</label><select id="publish-product"></select>
           <label for="publish-region">Khu vực</label><select id="publish-region"></select>
           <div id="publish-preview" class="preview empty">Tạo mặt hàng và khu vực để xem trước bài đăng.</div>
+          <label id="dry-run-option" class="dry-run"><input id="dry-run" type="checkbox" checked><span>Chạy thử trên Mac — điền bài để xem, không bấm Đăng</span></label>
           <button id="start-run" class="primary">Đăng vào khu vực này</button>
-          <p class="hint">Nút này bắt đầu đăng thật. Hãy kiểm tra caption, ảnh và danh sách group trước khi bấm.</p>
+          <p id="run-hint" class="hint">Hãy kiểm tra caption, ảnh và danh sách group trước khi bấm.</p>
         </div>
         <div class="card"><h2>Tiến độ</h2><div id="run-progress" class="muted">Chưa có lượt đăng đang chạy.</div></div>
       </div>

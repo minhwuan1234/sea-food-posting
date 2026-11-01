@@ -36,12 +36,15 @@ Dán nội dung clipboard vào biến `FACEBOOK_STORAGE_STATE_BASE64` trên Rail
 
 PostgreSQL lưu mặt hàng, khu vực, lịch sử và ảnh. Ảnh được lưu dạng binary trong DB để không mất khi Railway thay container. Bản đầu chạy một instance ứng dụng; không tăng số replica vì bộ xử lý đăng bài hiện được khóa trong bộ nhớ của một instance.
 
+Chi tiết các bảng và cách chuyển dữ liệu từ bản JSONB cũ: [DATABASE.md](DATABASE.md).
+
 ## Sử dụng
 
 1. Trong **Khu vực & group**, tạo khu vực rồi thêm link group `https://www.facebook.com/groups/...`.
 2. Trong **Mặt hàng**, lưu tên, caption và thêm nhiều ảnh. Có thể đặt caption và ảnh riêng cho một khu vực.
-3. Trong **Đăng bài**, chọn mặt hàng + khu vực, xem trước rồi bấm **Đăng vào khu vực này**. Đây là thao tác đăng thật.
-4. Xem trạng thái từng group trong **Lịch sử**. “Đã gửi” nghĩa là Playwright đã bấm nút Đăng và hộp soạn bài đóng; nếu group duyệt bài, hãy kiểm tra trên Facebook.
+3. Trên Mac local, trong **Đăng bài**, giữ chọn **Chạy thử trên Mac** rồi bấm **Chạy thử khu vực này**. Playwright điền caption và ảnh vào hộp soạn bài, dừng trước nút Đăng để bạn xem trong Chromium. Bấm **Đã xem xong · Tiếp tục** trên giao diện để đóng bản xem thử và sang group tiếp theo. Chế độ này không bấm Đăng.
+4. Khi muốn đăng thật, bỏ chọn **Chạy thử trên Mac**, xem trước rồi bấm **Đăng vào khu vực này** và xác nhận. Đây là thao tác đăng thật.
+5. Xem trạng thái từng group trong **Lịch sử**. “Đã gửi” nghĩa là Playwright đã bấm nút Đăng và hộp soạn bài đóng; nếu group duyệt bài, hãy kiểm tra trên Facebook.
 
 Facebook có thể thay đổi giao diện hoặc yêu cầu xác minh tài khoản. Khi đó Playwright dừng ở group gặp lỗi và ghi lý do; hệ thống không tự xử lý CAPTCHA hay xác minh.
 

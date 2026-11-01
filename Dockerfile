@@ -4,6 +4,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY public ./public
 COPY src ./src
+COPY sql ./sql
 EXPOSE 4173
 ENV HOST=0.0.0.0
 CMD ["npm", "start"]
