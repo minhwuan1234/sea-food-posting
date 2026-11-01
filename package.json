@@ -1,0 +1,19 @@
+{
+  "name": "facebook-group-poster",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "login": "node src/cli.js login",
+    "post": "node src/cli.js post",
+    "export-auth": "node src/export-auth.js",
+    "start": "node src/server.js",
+    "check": "node --check src/cli.js && node --check src/server.js && node --check src/facebook.js && node --check src/store.js && node --check src/export-auth.js && node --check public/app.js"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "multer": "^2.5.0",
+    "pg": "^8.23.1",
+    "playwright": "^1.56.0"
+  }
+}
