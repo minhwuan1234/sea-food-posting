@@ -37,7 +37,7 @@ export function createPostingService({ state, persist, products, regions, localP
             onError: err => waitForPreview(run, item, `${err.message} — Chromium đang giữ trang mở để bạn kiểm tra. Bấm Tiếp tục khi xem xong.`, 'preview_error')
           });
           item.status = run.dryRun ? 'previewed' : 'submitted';
-        } catch (err) { item.message = err.message; item.status = 'failed'; }
+        } catch (err) { item.message = err.message; item.status = err.uncertain ? 'needs_review' : 'failed'; run.error = err.message; stopRequested = true; }
         item.finishedAt = new Date().toISOString(); await persist();
         if (index < run.items.length - 1 && !stopRequested) {
           run.nextAt = new Date(Date.now() + 15000).toISOString(); await persist();
@@ -45,7 +45,9 @@ export function createPostingService({ state, persist, products, regions, localP
           run.nextAt = null; await persist();
         }
       }
-      run.status = stopRequested ? 'stopped' : 'finished';
+      run.status = run.items.some(item => item.status === 'needs_review') ? 'needs_review'
+        : run.error ? 'failed' : stopRequested ? 'stopped' : 'finished';
+      for (const item of run.items) if (item.status === 'pending') item.status = 'cancelled';
     } catch (err) {
       run.status = 'failed'; run.error = err.message;
       for (const item of run.items) if (item.status === 'pending') item.status = 'cancelled';
@@ -153,7 +155,7 @@ export function createPostingService({ state, persist, products, regions, localP
       if (run.status !== 'running') throw new AppError('Lượt đăng không còn hoạt động.', 409);
       const item = run.items[index];
       if (!item) throw new AppError('Không tìm thấy group trong lượt đăng.', 404);
-      if (!['running', 'submitted', 'failed', 'cancelled'].includes(input.status)) throw new AppError('Trạng thái group không hợp lệ.');
+      if (!['running', 'submitted', 'failed', 'needs_review', 'cancelled'].includes(input.status)) throw new AppError('Trạng thái group không hợp lệ.');
       item.status = input.status;
       if (input.status === 'running') item.startedAt = new Date().toISOString();
       if (input.status !== 'running') item.finishedAt = new Date().toISOString();
@@ -166,7 +168,7 @@ export function createPostingService({ state, persist, products, regions, localP
       workerLastSeenAt = Date.now();
       const run = this.get(id);
       if (run.status !== 'running') throw new AppError('Lượt đăng không còn hoạt động.', 409);
-      run.status = input.error ? 'failed' : run.stopRequested ? 'stopped' : 'finished';
+      run.status = input.needsReview ? 'needs_review' : input.error ? 'failed' : run.stopRequested ? 'stopped' : 'finished';
       if (input.error) run.error = String(input.error).slice(0, 2000);
       for (const item of run.items) if (item.status === 'pending') item.status = 'cancelled';
       run.finishedAt = new Date().toISOString(); run.nextAt = null;

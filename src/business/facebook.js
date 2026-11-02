@@ -70,14 +70,22 @@ export async function postToGroup(context, groupUrl, caption, mediaNames, option
       return 'Chạy thử xong: đã điền nội dung, không bấm Đăng.';
     }
     await page.waitForTimeout(2000);
-    await submit.click();
-    await page.waitForTimeout(1500);
-    if (await dialog.isVisible().catch(() => false)) {
-      throw new Error('Đã bấm Đăng nhưng hộp soạn bài vẫn mở; hãy kiểm tra thủ công.');
+    try { await submit.click(); }
+    catch {
+      const error = new Error('Không xác nhận được kết quả sau khi bấm Đăng. Kiểm tra bài trong Chromium trước khi đăng lại.');
+      error.uncertain = true;
+      throw error;
+    }
+    const confirmationTimeout = mediaNames.some(name => mediaMime(name).startsWith('video/')) ? 120000 : 30000;
+    try { await dialog.waitFor({ state: 'hidden', timeout: confirmationTimeout }); }
+    catch {
+      const error = new Error('Đã bấm Đăng nhưng chưa xác nhận Facebook hoàn tất. Kiểm tra bài trong Chromium trước khi đăng lại.');
+      error.uncertain = true;
+      throw error;
     }
     return 'Đã gửi bài; kiểm tra Facebook nếu group yêu cầu duyệt.';
   } catch (err) {
-    if (options.dryRun) await options.onError?.(err);
+    if (options.dryRun || err.uncertain) await options.onError?.(err);
     throw err;
   } finally {
     await page.close().catch(() => {});

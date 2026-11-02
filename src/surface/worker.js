@@ -1,4 +1,5 @@
 import { stdin, stdout } from 'node:process';
+import { createInterface } from 'node:readline/promises';
 import { launchFacebook, postToGroup } from '../business/facebook.js';
 
 const base = (process.env.REMOTE_URL || 'https://sea-food-posting-production.up.railway.app').replace(/\/$/, '');
@@ -54,11 +55,24 @@ async function request(path, method = 'GET', body) {
   return data;
 }
 
+async function waitForInspection() {
+  if (!stdin.isTTY) {
+    console.error('Kiểm tra bài trên Facebook trước khi đăng lại. Chromium sẽ tự đóng sau 2 phút.');
+    await sleep(120000);
+    return;
+  }
+  const prompt = createInterface({ input: stdin, output: stdout });
+  try {
+    await prompt.question('Chưa rõ Facebook đã đăng bài chưa. Kiểm tra trong Chromium, rồi nhấn Enter để đóng và dừng lượt đăng: ');
+  } finally { prompt.close(); }
+}
+
 async function processRun(queued) {
   const run = await request(`/runs/${queued.id}/claim`, 'POST');
   console.log(`Nhận lượt đăng ${run.productName} → ${run.regionName} (${run.items.length} group).`);
   let browser;
   let error;
+  let needsReview = false;
   try {
     browser = await launchFacebook();
     for (const [index, item] of run.items.entries()) {
@@ -67,11 +81,25 @@ async function processRun(queued) {
       await request(`/runs/${run.id}/items/${index}`, 'POST', { status: 'running' });
       let status = 'submitted';
       let message;
-      try { message = await postToGroup(browser.context, item.url, run.caption, run.images); }
-      catch (cause) { status = 'failed'; message = cause.message; }
-      const nextAt = index < run.items.length - 1 ? new Date(Date.now() + 15000).toISOString() : null;
+      try {
+        message = await postToGroup(browser.context, item.url, run.caption, run.images, {
+          onError: async cause => {
+            if (!cause.uncertain) return;
+            try { await request(`/runs/${run.id}/items/${index}`, 'POST', { status: 'needs_review', message: cause.message }); }
+            catch (reportError) { console.error('Chưa lưu được trạng thái cần kiểm tra:', reportError.message); }
+            await waitForInspection();
+          }
+        });
+      } catch (cause) {
+        status = cause.uncertain ? 'needs_review' : 'failed';
+        message = cause.message;
+        error = cause;
+        needsReview = cause.uncertain === true;
+      }
+      const nextAt = status === 'submitted' && index < run.items.length - 1 ? new Date(Date.now() + 15000).toISOString() : null;
       await request(`/runs/${run.id}/items/${index}`, 'POST', { status, message, nextAt });
       console.log(`${index + 1}/${run.items.length} ${item.groupName}: ${status} — ${message}`);
+      if (status !== 'submitted') break;
       if (nextAt) {
         for (let second = 0; second < 15; second++) {
           await sleep(1000);
@@ -82,7 +110,7 @@ async function processRun(queued) {
   } catch (cause) { error = cause; }
   finally {
     await browser?.close().catch(() => {});
-    try { await request(`/runs/${run.id}/finish`, 'POST', { error: error?.message }); }
+    try { await request(`/runs/${run.id}/finish`, 'POST', { error: error?.message, needsReview }); }
     catch (cause) { console.error('Không thể lưu kết quả lượt đăng:', cause.message); }
   }
   if (error) console.error('Lượt đăng lỗi:', error.message);

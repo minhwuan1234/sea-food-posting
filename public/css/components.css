@@ -59,6 +59,7 @@ form > button { margin-top: 20px; }
 .status { color: var(--ink); background: #e5f5fd; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; white-space: nowrap; font-size: 11px; font-weight: 800; }
 .status.submitted, .status.previewed, .status.finished { color: #285b12; background: #e5fad9; border-color: #a5ed6e; }
 .status.failed, .status.preview_error { color: #9b2f29; background: #fff0ec; border-color: #eeb1a8; }
+.status.needs_review { color: #704700; background: #fff2cc; border-color: #e5bd63; }
 .status.running, .status.preview, .status.starting { color: #075d94; background: #e3f6ff; border-color: #9adfff; }
 .run-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 0; border-bottom: 2px solid var(--soft-line); font-size: 13px; }
 .run-row:last-child { border: 0; }
