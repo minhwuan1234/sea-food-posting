@@ -172,12 +172,12 @@ export function saveState(state) {
   return Promise.resolve();
 }
 
-export async function saveImage(name, mime, body) {
+export async function saveMedia(name, mime, body) {
   if (pool) { await ensureSchema(); await pool.query('INSERT INTO images (name, mime, body) VALUES ($1, $2, $3)', [name, mime, body]); }
   else { mkdirSync(uploadDir, { recursive: true }); writeFileSync(resolve(uploadDir, name), body); }
 }
 
-export async function readImage(name) {
+export async function readMedia(name) {
   if (pool) {
     await ensureSchema();
     const result = await pool.query('SELECT mime, body FROM images WHERE name = $1', [name]);
@@ -185,12 +185,12 @@ export async function readImage(name) {
   }
   const path = resolve(uploadDir, name);
   if (!existsSync(path)) return null;
-  const mime = /\.png$/i.test(name) ? 'image/png' : /\.webp$/i.test(name) ? 'image/webp' : /\.gif$/i.test(name) ? 'image/gif' : /\.heic$/i.test(name) ? 'image/heic' : 'image/jpeg';
+  const mime = /\.mp4$/i.test(name) ? 'video/mp4' : /\.mov$/i.test(name) ? 'video/quicktime' : /\.png$/i.test(name) ? 'image/png' : /\.webp$/i.test(name) ? 'image/webp' : /\.gif$/i.test(name) ? 'image/gif' : /\.heic$/i.test(name) ? 'image/heic' : 'image/jpeg';
   return { mime, body: readFileSync(path) };
 }
 
-export async function imageBuffer(name) {
-  const image = await readImage(name);
-  if (!image) throw new Error(`Không tìm thấy ảnh ${name}`);
-  return image.body;
+export async function mediaBuffer(name) {
+  const media = await readMedia(name);
+  if (!media) throw new Error(`Không tìm thấy tệp ${name}`);
+  return media.body;
 }

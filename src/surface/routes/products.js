@@ -7,8 +7,12 @@ export function productsRouter(products, upload) {
   router.post('/', async (req, res) => res.status(201).json(await products.create(req.body)));
   router.put('/:id', async (req, res) => res.json(await products.update(req.params.id, req.body)));
   router.delete('/:id', async (req, res) => { await products.remove(req.params.id); res.json({ ok: true }); });
-  router.post('/:id/images', upload.array('images', 20), async (req, res) => res.json(await products.addImages(req.params.id, req.files, req.query.regionId)));
-  router.put('/:id/images', async (req, res) => res.json(await products.setImages(req.params.id, req.body)));
+  const addMedia = async (req, res) => res.json(await products.addMedia(req.params.id, req.files, req.query.regionId));
+  const setMedia = async (req, res) => res.json(await products.setMedia(req.params.id, req.body));
+  router.post('/:id/media', upload.array('media', 20), addMedia);
+  router.put('/:id/media', setMedia);
+  router.post('/:id/images', upload.array('images', 20), addMedia);
+  router.put('/:id/images', setMedia);
   router.put('/:id/variants/:regionId', async (req, res) => res.json(await products.setRegionCaption(req.params.id, req.params.regionId, req.body)));
   return router;
 }

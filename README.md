@@ -1,6 +1,6 @@
 # Sea Food Posting
 
-Giao diện quản lý mặt hàng, caption, nhiều ảnh, khu vực và group Facebook. Chọn một mặt hàng và một khu vực để đăng lần lượt; mỗi group cách nhau 15 giây. Lịch sử ghi kết quả theo group. Bạn có thể đăng lại cùng bài bất cứ lúc nào.
+Giao diện quản lý mặt hàng, caption, ảnh, video, khu vực và group Facebook. Chọn một mặt hàng và một khu vực để đăng lần lượt; mỗi group cách nhau 15 giây. Lịch sử ghi kết quả theo group. Bạn có thể đăng lại cùng bài bất cứ lúc nào.
 
 ## Chạy trên Mac
 
@@ -34,7 +34,7 @@ pbcopy < data/facebook-storage-state.base64
 
 Dán nội dung clipboard vào biến `FACEBOOK_STORAGE_STATE_BASE64` trên Railway. **Không đưa giá trị này vào Git, ảnh chụp màn hình hoặc tin nhắn.** Nó chứa cookie đăng nhập và cần xuất lại khi phiên hết hạn. Thư mục `data/` đã được bỏ qua bởi Git và Docker.
 
-PostgreSQL lưu mặt hàng, khu vực, lịch sử và ảnh. Ảnh được lưu dạng binary trong DB để không mất khi Railway thay container. Bản đầu chạy một instance ứng dụng; không tăng số replica vì bộ xử lý đăng bài hiện được khóa trong bộ nhớ của một instance.
+PostgreSQL lưu mặt hàng, khu vực, lịch sử, ảnh và video. Tệp được lưu dạng binary trong DB để không mất khi Railway thay container. Bản đầu chạy một instance ứng dụng; không tăng số replica vì bộ xử lý đăng bài hiện được khóa trong bộ nhớ của một instance.
 
 Chi tiết các bảng và cách chuyển dữ liệu từ bản JSONB cũ: [DATABASE.md](DATABASE.md).
 
@@ -45,12 +45,14 @@ Tài liệu giao diện nằm trong một file [DESIGN.md](DESIGN.md). Cây mã 
 Mỗi tab có URL riêng: `/dang-bai`, `/mat-hang`, `/khu-vuc`, `/lich-su`. Trang chỉ gọi API cho dữ liệu cần hiển thị; lịch sử tải 20 lượt mỗi trang và chỉ tải chi tiết khi mở một lượt. Server giữ dữ liệu vận hành trong bộ nhớ sau lúc khởi động để không đọc lại toàn bộ PostgreSQL khi chuyển tab.
 
 1. Trong **Khu vực & group**, tạo khu vực rồi thêm link group `https://www.facebook.com/groups/...`.
-2. Trong **Mặt hàng**, lưu tên, caption và thêm nhiều ảnh. Có thể đặt caption và ảnh riêng cho một khu vực.
-3. Trên Mac local, trong **Đăng bài**, giữ chọn **Chạy thử trên Mac** rồi bấm **Chạy thử khu vực này**. Playwright điền caption và ảnh vào hộp soạn bài, dừng trước nút Đăng để bạn xem trong Chromium. Bấm **Đã xem xong · Tiếp tục** trên giao diện để đóng bản xem thử và sang group tiếp theo. Chế độ này không bấm Đăng.
+2. Trong **Mặt hàng**, lưu tên, caption rồi thêm ảnh hoặc video MP4/MOV (tối đa 100 MB mỗi tệp). Có thể đặt caption và bộ ảnh/video riêng cho một khu vực, đổi thứ tự hoặc bỏ từng tệp.
+3. Trên Mac local, trong **Đăng bài**, giữ chọn **Chạy thử trên Mac** rồi bấm **Chạy thử khu vực này**. Playwright điền caption và ảnh/video vào hộp soạn bài, dừng trước nút Đăng để bạn xem trong Chromium. Bấm **Đã xem xong · Tiếp tục** trên giao diện để đóng bản xem thử và sang group tiếp theo. Chế độ này không bấm Đăng.
 4. Khi muốn đăng thật, bỏ chọn **Chạy thử trên Mac**, xem trước rồi bấm **Đăng vào khu vực này** và xác nhận. Đây là thao tác đăng thật.
 5. Xem trạng thái từng group trong **Lịch sử**. “Đã gửi” nghĩa là Playwright đã bấm nút Đăng và hộp soạn bài đóng; nếu group duyệt bài, hãy kiểm tra trên Facebook.
 
 Facebook có thể thay đổi giao diện hoặc yêu cầu xác minh tài khoản. Khi đó Playwright dừng ở group gặp lỗi và ghi lý do; hệ thống không tự xử lý CAPTCHA hay xác minh.
+
+Video cần thời gian tải và xử lý trên Facebook. Playwright chờ nút Đăng sẵn sàng tối đa 2 phút; hãy chạy thử trên Mac trước khi đăng thật. Facebook có thể giới hạn việc trộn ảnh và video trong cùng một bài tùy giao diện group.
 
 ## Kiểm tra mã
 

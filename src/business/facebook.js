@@ -1,7 +1,8 @@
 import { chromium } from 'playwright';
 import { resolve } from 'node:path';
-import { dataDir, imageBuffer } from '../database/store.js';
+import { dataDir, mediaBuffer } from '../database/store.js';
 import { validGroupUrl } from './validation.js';
+import { mediaMime } from './media.js';
 
 const profileDir = resolve(dataDir, 'facebook-profile');
 const posterNames = /^(đăng|post|đăng bài|post now)$/i;
@@ -25,7 +26,7 @@ export async function launchFacebook() {
   return { context, close: () => context.close() };
 }
 
-export async function postToGroup(context, groupUrl, caption, imageNames, options = {}) {
+export async function postToGroup(context, groupUrl, caption, mediaNames, options = {}) {
   if (!validGroupUrl(groupUrl)) throw new Error('Link group không hợp lệ.');
   const page = await context.newPage();
   try {
@@ -43,7 +44,7 @@ export async function postToGroup(context, groupUrl, caption, imageNames, option
     await editor.waitFor({ state: 'visible', timeout: 15000 });
     await editor.fill(caption);
     await page.waitForTimeout(2000);
-    if (imageNames.length) {
+    if (mediaNames.length) {
       const addPhotos = await firstVisible([
         dialog.getByRole('button', { name: /ảnh\/video|photo\/video|thêm ảnh|add photos/i }),
         dialog.getByText(/ảnh\/video|photo\/video/i)
@@ -51,9 +52,9 @@ export async function postToGroup(context, groupUrl, caption, imageNames, option
       if (addPhotos) { await addPhotos.click(); await page.waitForTimeout(2000); }
       const input = dialog.locator('input[type="file"]').first();
       await input.waitFor({ state: 'attached', timeout: 10000 });
-      const files = await Promise.all(imageNames.map(async name => ({
-        name, mimeType: /\.png$/i.test(name) ? 'image/png' : /\.webp$/i.test(name) ? 'image/webp' : /\.gif$/i.test(name) ? 'image/gif' : /\.heic$/i.test(name) ? 'image/heic' : 'image/jpeg',
-        buffer: await imageBuffer(name)
+      const files = await Promise.all(mediaNames.map(async name => ({
+        name, mimeType: mediaMime(name),
+        buffer: await mediaBuffer(name)
       })));
       await input.setInputFiles(files);
       await page.waitForTimeout(2000);
@@ -63,6 +64,7 @@ export async function postToGroup(context, groupUrl, caption, imageNames, option
       page.getByRole('button', { name: posterNames })
     ]);
     if (!submit) throw new Error('Không thấy nút Đăng.');
+    await submit.click({ trial: true, timeout: mediaNames.length ? 120000 : 15000 });
     if (options.dryRun) {
       await options.onPrepared?.();
       return 'Chạy thử xong: đã điền nội dung, không bấm Đăng.';

@@ -10,13 +10,13 @@ const profileDir = resolve(root, 'data', 'facebook-profile');
 const command = process.argv[2];
 
 function options(args) {
-  const result = { images: [] };
+  const result = { media: [] };
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--image') result.images.push(args[++i]);
+    if (arg === '--image' || arg === '--video') result.media.push(args[++i]);
     else if (arg === '--group' || arg === '--caption-file') result[arg.slice(2)] = args[++i];
     else throw new Error(`Tham số không hợp lệ: ${arg}`);
-    if (arg === '--image' ? result.images.at(-1) === undefined : result[arg.slice(2)] === undefined) {
+    if (arg === '--image' || arg === '--video' ? result.media.at(-1) === undefined : result[arg.slice(2)] === undefined) {
       throw new Error(`Thiếu giá trị cho ${arg}`);
     }
   }
@@ -51,8 +51,8 @@ async function openComposer(page) {
   return editor;
 }
 
-async function attachImages(page, images) {
-  if (!images.length) return;
+async function attachMedia(page, media) {
+  if (!media.length) return;
   const dialog = page.getByRole('dialog');
   const addPhotos = await firstVisible([
     dialog.getByRole('button', { name: /ảnh\/video|photo\/video|thêm ảnh|add photos/i }),
@@ -61,13 +61,13 @@ async function attachImages(page, images) {
   if (addPhotos) await addPhotos.click();
   const input = dialog.locator('input[type="file"]').first();
   await input.waitFor({ state: 'attached', timeout: 10000 });
-  await input.setInputFiles(images);
-  console.log(`Đã chọn ${images.length} ảnh. Chờ Facebook tải ảnh và kiểm tra bản xem trước.`);
+  await input.setInputFiles(media);
+  console.log(`Đã chọn ${media.length} tệp ảnh/video. Chờ Facebook tải xong rồi kiểm tra bản xem trước.`);
 }
 
 async function main() {
   if (!['login', 'post'].includes(command)) {
-    console.log('Dùng: npm run login\nHoặc: npm run post -- --group URL --caption-file caption.txt --image anh1.jpg --image anh2.jpg');
+    console.log('Dùng: npm run login\nHoặc: npm run post -- --group URL --caption-file caption.txt --image anh1.jpg --video video.mp4');
     process.exitCode = 1;
     return;
   }
@@ -81,8 +81,8 @@ async function main() {
     args.group = u.href;
     args['caption-file'] = resolve(args['caption-file']);
     if (!existsSync(args['caption-file'])) throw new Error('Không tìm thấy file caption.');
-    args.images = args.images.map(path => resolve(path));
-    for (const image of args.images) if (!existsSync(image)) throw new Error(`Không tìm thấy ảnh: ${image}`);
+    args.media = args.media.map(path => resolve(path));
+    for (const media of args.media) if (!existsSync(media)) throw new Error(`Không tìm thấy tệp: ${media}`);
   }
   mkdirSync(profileDir, { recursive: true });
   const context = await chromium.launchPersistentContext(profileDir, {
@@ -105,7 +105,7 @@ async function main() {
     const caption = readFileSync(args['caption-file'], 'utf8').trim();
     if (!caption) throw new Error('Caption đang trống.');
     await editor.fill(caption);
-    await attachImages(page, args.images);
+    await attachMedia(page, args.media);
     const answer = (await prompt('Kiểm tra bài trong Chromium. Gõ DANG để bấm Đăng; Enter để hủy: ')).trim();
     if (answer !== 'DANG') {
       console.log('Đã hủy. Chưa bấm Đăng.');

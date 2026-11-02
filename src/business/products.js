@@ -1,13 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { AppError, requireFound } from './errors.js';
-import { cleanText, validImages } from './validation.js';
+import { cleanText, validMedia } from './validation.js';
+import { mediaExtensions, isVideo } from './media.js';
 
-const extensions = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif', 'image/heic': '.heic' };
-
-export function createProductsService({ state, persist, saveImage, findRegion }) {
+export function createProductsService({ state, persist, saveMedia, findRegion }) {
   const find = id => state.products.find(item => item.id === id);
   return {
-    list() { return state.products.map(product => ({ id: product.id, name: product.name, coverImage: product.images[0] ?? null, imageCount: product.images.length, variantCount: Object.keys(product.variants ?? {}).length })); },
+    list() { return state.products.map(product => ({ id: product.id, name: product.name, coverMedia: product.images[0] ?? null, mediaCount: product.images.length, coverImage: product.images.find(name => !isVideo(name)) ?? null, imageCount: product.images.filter(name => !isVideo(name)).length, videoCount: product.images.filter(isVideo).length, variantCount: Object.keys(product.variants ?? {}).length })); },
     get(id) { return requireFound(find(id), 'Không tìm thấy mặt hàng.'); },
     async create(input) {
       const name = cleanText(input.name, 150);
@@ -28,16 +27,16 @@ export function createProductsService({ state, persist, saveImage, findRegion })
       if (index < 0) throw new AppError('Không tìm thấy mặt hàng.', 404);
       state.products.splice(index, 1); await persist();
     },
-    async addImages(id, files, regionId) {
+    async addMedia(id, files, regionId) {
       const product = requireFound(find(id), 'Không tìm thấy mặt hàng.');
       if (regionId) requireFound(findRegion(regionId), 'Không tìm thấy khu vực.');
-      if (!files?.length) throw new AppError('Chọn ảnh JPG, PNG, WebP, GIF hoặc HEIC.');
+      if (!files?.length) throw new AppError('Chọn ảnh hoặc video MP4/MOV.');
       const names = [];
       for (const file of files) {
-        const extension = extensions[file.mimetype];
-        if (!extension) throw new AppError('Định dạng ảnh không được hỗ trợ.');
+        const extension = mediaExtensions[file.mimetype];
+        if (!extension) throw new AppError('Định dạng ảnh hoặc video không được hỗ trợ.');
         const name = `${randomUUID()}${extension}`;
-        await saveImage(name, file.mimetype, file.buffer);
+        await saveMedia(name, file.mimetype, file.buffer);
         names.push(name);
       }
       if (regionId) {
@@ -46,12 +45,12 @@ export function createProductsService({ state, persist, saveImage, findRegion })
       } else product.images.push(...names);
       await persist(); return product;
     },
-    async setImages(id, input) {
+    async setMedia(id, input) {
       const product = requireFound(find(id), 'Không tìm thấy mặt hàng.');
-      if (!validImages(input.images)) throw new AppError('Danh sách ảnh không hợp lệ.');
+      if (!validMedia(input.images)) throw new AppError('Danh sách ảnh/video không hợp lệ.');
       const regionId = input.regionId;
       const current = regionId ? product.variants[regionId]?.images ?? [] : product.images;
-      if (!input.images.every(name => current.includes(name))) throw new AppError('Ảnh không thuộc mặt hàng này.');
+      if (!input.images.every(name => current.includes(name))) throw new AppError('Tệp không thuộc mặt hàng này.');
       if (regionId) {
         requireFound(findRegion(regionId), 'Không tìm thấy khu vực.');
         const variant = product.variants[regionId] ?? { caption: '', images: [] };

@@ -19,6 +19,6 @@ export function requireGroup(name, url) {
   return { name: cleanName, url: cleanUrl };
 }
 
-export function validImages(images) {
-  return Array.isArray(images) && images.every(name => typeof name === 'string' && /^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif|heic)$/i.test(name));
+export function validMedia(images) {
+  return Array.isArray(images) && images.every(name => typeof name === 'string' && /^[a-f0-9-]+\.(jpg|jpeg|png|webp|gif|heic|mp4|mov)$/i.test(name));
 }

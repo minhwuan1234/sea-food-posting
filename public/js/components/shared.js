@@ -24,8 +24,14 @@ export function optionList(items, selected, placeholder) {
   if (!items.length) return `<option value="">${escape(placeholder)}</option>`;
   return items.map(item => `<option value="${item.id}" ${item.id === selected ? 'selected' : ''}>${escape(item.name)}</option>`).join('');
 }
-export function imageMarkup(images, controls = false, scope = '') {
-  return (images || []).map((name, index) => `<div class="image-tile"><img loading="lazy" src="/uploads/${encodeURIComponent(name)}" alt="Ảnh ${index + 1}">${controls ? `<div class="image-tools"><button data-image-action="up" data-scope="${scope}" data-index="${index}" title="Lên">↑</button><button data-image-action="down" data-scope="${scope}" data-index="${index}" title="Xuống">↓</button><button data-image-action="remove" data-scope="${scope}" data-index="${index}" title="Bỏ khỏi bài">×</button></div>` : ''}</div>`).join('');
+export const isVideo = name => /\.(mp4|mov)$/i.test(name || '');
+export function mediaSummary(media) {
+  const videos = (media || []).filter(isVideo).length;
+  const images = (media || []).length - videos;
+  return [images ? `${images} ảnh` : '', videos ? `${videos} video` : ''].filter(Boolean).join(' · ') || 'Chưa có ảnh/video';
+}
+export function mediaMarkup(media, controls = false, scope = '') {
+  return (media || []).map((name, index) => `<div class="image-tile ${isVideo(name) ? 'video-tile' : ''}">${isVideo(name) ? `<video controls preload="metadata" playsinline src="/uploads/${encodeURIComponent(name)}" aria-label="Video ${index + 1}"></video>` : `<img loading="lazy" src="/uploads/${encodeURIComponent(name)}" alt="Ảnh ${index + 1}">`}${controls ? `<div class="image-tools"><button data-image-action="up" data-scope="${scope}" data-index="${index}" title="Lên">↑</button><button data-image-action="down" data-scope="${scope}" data-index="${index}" title="Xuống">↓</button><button data-image-action="remove" data-scope="${scope}" data-index="${index}" title="Bỏ khỏi bài">×</button></div>` : ''}</div>`).join('');
 }
 export function statusText(status) {
   return ({ starting: 'Đang mở', running: 'Đang xử lý', preview: 'Đang xem thử', preview_error: 'Cần kiểm tra', previewed: 'Đã xem thử', submitted: 'Đã gửi', failed: 'Lỗi', pending: 'Chờ', cancelled: 'Đã bỏ qua', finished: 'Hoàn tất', stopped: 'Đã dừng' })[status] || status;

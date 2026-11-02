@@ -1,4 +1,4 @@
-import { $, api, act, notice, optionList, imageMarkup } from '../components/shared.js';
+import { $, api, act, notice, optionList, mediaMarkup } from '../components/shared.js';
 import { productList } from '../components/catalog-list.js';
 
 export async function mountProducts() {
@@ -11,7 +11,7 @@ export async function mountProducts() {
   function renderVariant() {
     const variant = product?.variants?.[selectedVariantRegion];
     $('#variant-caption').value = variant?.caption || '';
-    $('#variant-images').innerHTML = variant?.images?.length ? imageMarkup(variant.images, true, 'variant') : '<p class="muted">Đang dùng ảnh mặc định.</p>';
+    $('#variant-images').innerHTML = variant?.images?.length ? mediaMarkup(variant.images, true, 'variant') : '<p class="muted">Đang dùng ảnh/video mặc định.</p>';
     $('#save-variant').disabled = !product || !selectedVariantRegion;
     $('#variant-upload').disabled = !product || !selectedVariantRegion;
   }
@@ -21,7 +21,7 @@ export async function mountProducts() {
     $('#product-name').value = product?.name || '';
     $('#product-caption').value = product?.caption || '';
     $('#product-assets').hidden = !product;
-    $('#product-images').innerHTML = product ? imageMarkup(product.images, true, 'base') : '';
+    $('#product-images').innerHTML = product ? mediaMarkup(product.images, true, 'base') : '';
     $('#variant-region').innerHTML = optionList(regions, selectedVariantRegion, 'Chưa có khu vực');
     renderVariant();
   }
@@ -51,15 +51,17 @@ export async function mountProducts() {
       await refresh(); notice('Đã xóa mặt hàng.');
     }
   }));
-  async function uploadImages(files, regionId = '') {
+  async function uploadMedia(files, regionId = '') {
     if (!editingProduct || !files.length) return;
+    const tooLarge = [...files].find(file => file.size > 100 * 1024 * 1024);
+    if (tooLarge) throw new Error(`${tooLarge.name} vượt quá 100 MB.`);
     const form = new FormData();
-    for (const file of files) form.append('images', file);
-    await api(`/products/${editingProduct}/images${regionId ? `?regionId=${encodeURIComponent(regionId)}` : ''}`, { method: 'POST', body: form });
-    await refresh(); notice(`Đã thêm ${files.length} ảnh.`);
+    for (const file of files) form.append('media', file);
+    await api(`/products/${editingProduct}/media${regionId ? `?regionId=${encodeURIComponent(regionId)}` : ''}`, { method: 'POST', body: form });
+    await refresh(); notice(`Đã thêm ${files.length} tệp ảnh/video.`);
   }
-  $('#product-upload').addEventListener('change', event => act(async () => { await uploadImages(event.target.files); event.target.value = ''; }));
-  $('#variant-upload').addEventListener('change', event => act(async () => { await uploadImages(event.target.files, selectedVariantRegion); event.target.value = ''; }));
+  $('#product-upload').addEventListener('change', event => act(async () => { await uploadMedia(event.target.files); event.target.value = ''; }));
+  $('#variant-upload').addEventListener('change', event => act(async () => { await uploadMedia(event.target.files, selectedVariantRegion); event.target.value = ''; }));
   $('#variant-region').addEventListener('change', event => { selectedVariantRegion = event.target.value; renderVariant(); });
   $('#save-variant').addEventListener('click', () => act(async () => {
     await api(`/products/${editingProduct}/variants/${selectedVariantRegion}`, { method: 'PUT', body: { caption: $('#variant-caption').value } });
@@ -74,7 +76,7 @@ export async function mountProducts() {
     if (button.dataset.imageAction === 'remove') images.splice(index, 1);
     if (button.dataset.imageAction === 'up' && index > 0) [images[index - 1], images[index]] = [images[index], images[index - 1]];
     if (button.dataset.imageAction === 'down' && index < images.length - 1) [images[index + 1], images[index]] = [images[index], images[index + 1]];
-    await api(`/products/${editingProduct}/images`, { method: 'PUT', body: { images, regionId } });
+    await api(`/products/${editingProduct}/media`, { method: 'PUT', body: { images, regionId } });
     await refresh();
   }
   $('#product-images').addEventListener('click', event => act(() => changeImages(event, 'base')));
