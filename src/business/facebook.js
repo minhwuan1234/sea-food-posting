@@ -14,6 +14,26 @@ async function firstVisible(locators) {
   return null;
 }
 
+export async function attachMedia(page, dialog, mediaNames, loadMedia) {
+  const files = await Promise.all(mediaNames.map(async name => ({
+    name, mimeType: mediaMime(name), buffer: await loadMedia(name)
+  })));
+  const input = dialog.locator('input[type="file"]').first();
+  if (await input.count()) {
+    await input.setInputFiles(files);
+    return;
+  }
+  const addPhotos = await firstVisible([
+    dialog.getByRole('button', { name: /ảnh\/video|photo\/video|thêm ảnh|add photos/i }),
+    dialog.getByText(/ảnh\/video|photo\/video/i)
+  ]);
+  if (!addPhotos) throw new Error('Không thấy nút thêm ảnh/video trong bài viết.');
+  const chooserPromise = page.waitForEvent('filechooser', { timeout: 10000 });
+  await addPhotos.click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles(files);
+}
+
 export async function launchFacebook() {
   if (process.env.RAILWAY_ENVIRONMENT || process.env.FACEBOOK_STORAGE_STATE_BASE64) {
     if (!process.env.FACEBOOK_STORAGE_STATE_BASE64) throw new Error('Thiếu FACEBOOK_STORAGE_STATE_BASE64.');
@@ -45,19 +65,7 @@ export async function postToGroup(context, groupUrl, caption, mediaNames, option
     await editor.fill(caption);
     await page.waitForTimeout(2000);
     if (mediaNames.length) {
-      const addPhotos = await firstVisible([
-        dialog.getByRole('button', { name: /ảnh\/video|photo\/video|thêm ảnh|add photos/i }),
-        dialog.getByText(/ảnh\/video|photo\/video/i)
-      ]);
-      if (addPhotos) { await addPhotos.click(); await page.waitForTimeout(2000); }
-      const input = dialog.locator('input[type="file"]').first();
-      await input.waitFor({ state: 'attached', timeout: 10000 });
-      const loadMedia = options.loadMedia ?? mediaBuffer;
-      const files = await Promise.all(mediaNames.map(async name => ({
-        name, mimeType: mediaMime(name),
-        buffer: await loadMedia(name)
-      })));
-      await input.setInputFiles(files);
+      await attachMedia(page, dialog, mediaNames, options.loadMedia ?? mediaBuffer);
       await page.waitForTimeout(2000);
     }
     const submit = await firstVisible([
