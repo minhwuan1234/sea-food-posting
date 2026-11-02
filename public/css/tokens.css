@@ -1,22 +1,27 @@
 :root {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-  color: #1d1d1f;
-  background: #fff;
+  font-family: ui-rounded, "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
+  color: #3c3c3c;
+  background: #ddf4ff;
   font-synthesis: none;
-  --ink: #1d1d1f;
-  --muted: #6e6e73;
-  --blue: #0066cc;
-  --blue-hover: #0077ed;
-  --line: #d2d2d7;
-  --soft-line: #e8e8ed;
-  --soft: #f5f5f7;
+  --ink: #3c3c3c;
+  --muted: #60676b;
+  --blue: #086fad;
+  --blue-hover: #005f9c;
+  --accent: #1cb0f6;
+  --primary: #a5ed6e;
+  --primary-edge: #75bc43;
+  --line: #c7e2ee;
+  --soft-line: #d9ecf4;
+  --soft: #effaff;
   --white: #fff;
-  --radius: 18px;
+  --radius: 12px;
+  --motion: 300ms ease;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; font-size: 17px; line-height: 1.47; -webkit-font-smoothing: antialiased; }
+body { margin: 0; font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 a { color: var(--blue); }
 [hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
