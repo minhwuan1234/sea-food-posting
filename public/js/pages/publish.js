@@ -9,23 +9,32 @@ export async function mountPublish() {
   let region = null;
   let activeRun = null;
   let localPreviewAvailable = false;
+  let workerOnline = false;
   let selectedProduct = '';
   let selectedRegion = '';
+  let previewProduct = null;
+  let previewRegion = null;
 
   function render() {
     $('#publish-product').innerHTML = optionList(products, selectedProduct, 'Chưa có mặt hàng');
     $('#publish-region').innerHTML = optionList(regions, selectedRegion, 'Chưa có khu vực');
-    $('#publish-preview').innerHTML = productPreview(product, region);
+    if (previewProduct !== product || previewRegion !== region) {
+      $('#publish-preview').innerHTML = productPreview(product, region);
+      previewProduct = product; previewRegion = region;
+    }
     $('#dry-run-option').hidden = !localPreviewAvailable;
+    $('#worker-status').hidden = localPreviewAvailable;
+    $('#worker-status').textContent = workerOnline ? '● Worker Mac đã kết nối' : '○ Worker Mac chưa kết nối. Mở Terminal trong repo và chạy npm run worker.';
+    $('#worker-status').classList.toggle('online', workerOnline);
     const dryRun = localPreviewAvailable && $('#dry-run').checked;
     $('#start-run').textContent = dryRun ? 'Chạy thử khu vực này' : 'Đăng vào khu vực này';
-    $('#run-hint').textContent = dryRun ? 'Playwright điền bài rồi dừng trước nút Đăng để bạn kiểm tra trong Chromium.' : 'Nút này bắt đầu đăng thật. Hãy kiểm tra nội dung và danh sách group trước khi bấm.';
-    $('#start-run').disabled = !product || !region?.groups.length || !!activeRun;
+    $('#run-hint').textContent = dryRun ? 'Playwright điền bài rồi dừng trước nút Đăng để bạn kiểm tra trong Chromium.' : workerOnline || localPreviewAvailable ? 'Nút này bắt đầu đăng thật. Hãy kiểm tra nội dung và danh sách group trước khi bấm.' : 'Khởi động worker trên Mac trước khi đăng.';
+    $('#start-run').disabled = !product || !region?.groups.length || !!activeRun || (!localPreviewAvailable && !workerOnline);
     $('#run-progress').innerHTML = runProgress(activeRun);
   }
   async function refreshActive() {
     const active = await api('/active-run');
-    activeRun = active.run; localPreviewAvailable = active.localPreviewAvailable;
+    activeRun = active.run; localPreviewAvailable = active.localPreviewAvailable; workerOnline = active.workerOnline;
     render();
   }
   [products, regions] = await Promise.all([api('/products'), api('/regions')]);

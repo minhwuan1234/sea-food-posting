@@ -11,6 +11,7 @@ import { createPostingService } from '../business/posting.js';
 import { productsRouter } from './routes/products.js';
 import { regionsRouter } from './routes/regions.js';
 import { postingRouter } from './routes/posting.js';
+import { workerRouter } from './routes/worker.js';
 
 const port = Number(process.env.PORT || 4173);
 const hosted = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.HOST === '0.0.0.0');
@@ -67,6 +68,7 @@ app.get('/api/active-run', (_req, res) => res.json(posting.getActive()));
 app.use('/api/products', productsRouter(products, upload));
 app.use('/api/regions', regionsRouter(regions));
 app.use('/api/runs', postingRouter(posting));
+app.use('/api/worker', workerRouter(posting));
 app.use((err, _req, res, _next) => {
   const status = err instanceof multer.MulterError ? 400 : err.status || 500;
   res.status(status).json({ error: err.message || 'Lỗi máy chủ.' });

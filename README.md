@@ -15,6 +15,16 @@ npm start
 
 Mở `http://127.0.0.1:4173/dang-bai`. Lệnh `login` mở Chromium để bạn tự đăng nhập Facebook; quay lại Terminal và nhấn Enter sau khi vào được tài khoản. Phiên được lưu trong `data/facebook-profile` trên Mac.
 
+## Worker Mac cho Railway
+
+Railway nhận yêu cầu và lưu tiến độ. Playwright chạy trên Mac để dùng phiên đăng nhập local và mở Chromium cho bạn thấy. Trong thư mục local đã chạy `npm run login`, mở Terminal và chạy:
+
+```bash
+npm run worker
+```
+
+Nhập `APP_PASSWORD` của giao diện Railway khi Terminal hỏi. Mật khẩu không hiện khi gõ và không được lưu vào repo. Giữ Terminal mở trong lúc đăng. Trang `/dang-bai` sẽ hiện **Worker Mac đã kết nối**; nút Đăng chỉ mở khi worker online. Khi bạn bấm Đăng, Railway xếp lượt đăng vào hàng chờ, worker nhận và xử lý lần lượt từng group. Có thể đặt `REMOTE_URL` nếu dùng domain Railway khác.
+
 ## Triển khai Railway
 
 1. Tạo service ứng dụng từ repo GitHub này. Railway tự nhận `Dockerfile` ở thư mục gốc.
@@ -22,19 +32,11 @@ Mở `http://127.0.0.1:4173/dang-bai`. Lệnh `login` mở Chromium để bạn 
 3. Trong Variables của service ứng dụng, đặt:
    - `DATABASE_URL=${{Postgres.DATABASE_URL}}` (thay `Postgres` bằng tên service DB nếu khác).
    - `APP_PASSWORD`: mật khẩu dài, riêng cho giao diện. Tên đăng nhập là `admin`.
-   - `FACEBOOK_STORAGE_STATE_BASE64`: phiên Facebook xuất từ Mac theo bước dưới.
 4. Deploy service và tạo domain trong Networking. Ứng dụng dùng `PORT` do Railway cấp, lắng nghe trên `0.0.0.0` khi chạy trên Railway.
 
-Xuất phiên Facebook đã đăng nhập trên Mac:
+Phiên Facebook nằm trong `data/facebook-profile` trên Mac. Không cần đưa cookie Facebook lên Railway. Thư mục `data/` đã được bỏ qua bởi Git và Docker.
 
-```bash
-npm run export-auth
-pbcopy < data/facebook-storage-state.base64
-```
-
-Dán nội dung clipboard vào biến `FACEBOOK_STORAGE_STATE_BASE64` trên Railway. **Không đưa giá trị này vào Git, ảnh chụp màn hình hoặc tin nhắn.** Nó chứa cookie đăng nhập và cần xuất lại khi phiên hết hạn. Thư mục `data/` đã được bỏ qua bởi Git và Docker.
-
-PostgreSQL lưu mặt hàng, khu vực, lịch sử, ảnh và video. Tệp được lưu dạng binary trong DB để không mất khi Railway thay container. Bản đầu chạy một instance ứng dụng; không tăng số replica vì bộ xử lý đăng bài hiện được khóa trong bộ nhớ của một instance.
+PostgreSQL lưu mặt hàng, khu vực, lịch sử, ảnh và video. Tệp được lưu dạng binary trong DB để không mất khi Railway thay container. Bản đầu chạy một instance Railway và một worker Mac; không tăng số replica vì hàng chờ hiện dùng trạng thái của một instance.
 
 Chi tiết các bảng và cách chuyển dữ liệu từ bản JSONB cũ: [DATABASE.md](DATABASE.md).
 
@@ -47,7 +49,7 @@ Mỗi tab có URL riêng: `/dang-bai`, `/mat-hang`, `/khu-vuc`, `/lich-su`. Tran
 1. Trong **Khu vực & group**, tạo khu vực rồi thêm link group `https://www.facebook.com/groups/...`.
 2. Trong **Mặt hàng**, lưu tên, caption rồi thêm ảnh hoặc video MP4/MOV (tối đa 100 MB mỗi tệp). Có thể đặt caption và bộ ảnh/video riêng cho một khu vực, đổi thứ tự hoặc bỏ từng tệp.
 3. Trên Mac local, trong **Đăng bài**, giữ chọn **Chạy thử trên Mac** rồi bấm **Chạy thử khu vực này**. Playwright điền caption và ảnh/video vào hộp soạn bài, dừng trước nút Đăng để bạn xem trong Chromium. Bấm **Đã xem xong · Tiếp tục** trên giao diện để đóng bản xem thử và sang group tiếp theo. Chế độ này không bấm Đăng.
-4. Khi muốn đăng thật, bỏ chọn **Chạy thử trên Mac**, xem trước rồi bấm **Đăng vào khu vực này** và xác nhận. Đây là thao tác đăng thật.
+4. Khi muốn đăng thật qua Railway, chạy worker trên Mac, đợi trạng thái online, xem trước rồi bấm **Đăng vào khu vực này** và xác nhận. Worker mở Chromium trên Mac và thực hiện lượt đăng.
 5. Xem trạng thái từng group trong **Lịch sử**. “Đã gửi” nghĩa là Playwright đã bấm nút Đăng và hộp soạn bài đóng; nếu group duyệt bài, hãy kiểm tra trên Facebook.
 
 Facebook có thể thay đổi giao diện hoặc yêu cầu xác minh tài khoản. Khi đó Playwright dừng ở group gặp lỗi và ghi lý do; hệ thống không tự xử lý CAPTCHA hay xác minh.

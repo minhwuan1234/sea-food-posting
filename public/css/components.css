@@ -17,6 +17,8 @@ form > button { margin-top: 20px; }
 .control-panel > button { width: 100%; margin-top: 22px; }
 .dry-run { display: flex; gap: 10px; align-items: start; margin-top: 20px; font-size: 13px; font-weight: 700; }
 .dry-run input { margin-top: 3px; accent-color: #68b52e; width: 18px; height: 18px; flex: none; }
+.worker-status { margin: 20px 0 0; padding: 12px 14px; border: 2px solid var(--line); border-radius: 12px; color: var(--muted); background: var(--soft); font-size: 12px; font-weight: 800; }
+.worker-status.online { color: #285b12; border-color: var(--primary-edge); background: #e5fad9; }
 .hint, .muted, .fine-note { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .hint { margin: 12px 0 0; }
 .editor-divider { border-top: 2px dashed var(--line); margin: 30px 0 26px; }

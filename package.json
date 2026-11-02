@@ -7,6 +7,7 @@
     "login": "node src/surface/cli.js login",
     "post": "node src/surface/cli.js post",
     "export-auth": "node src/surface/export-auth.js",
+    "worker": "node src/surface/worker.js",
     "start": "node src/surface/server.js",
     "check": "find src public/js -name '*.js' -print0 | xargs -0 -n1 node --check"
   },

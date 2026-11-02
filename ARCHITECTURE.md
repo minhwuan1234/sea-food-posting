@@ -9,8 +9,10 @@ src/
 │   ├── routes/              API theo chức năng
 │   │   ├── products.js
 │   │   ├── regions.js
-│   │   └── posting.js
+│   │   ├── posting.js
+│   │   └── worker.js
 │   ├── cli.js               Đăng nhập và đăng từ Terminal
+│   ├── worker.js            Worker Mac nhận việc từ Railway
 │   └── export-auth.js       Xuất phiên Facebook cho Railway
 ├── business/                Quy tắc nghiệp vụ
 │   ├── products.js          Mặt hàng và nội dung theo khu vực

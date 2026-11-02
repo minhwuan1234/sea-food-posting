@@ -8,6 +8,9 @@ export function createPostingService({ state, persist, products, regions, localP
   let activeRun = null;
   let stopRequested = false;
   let previewResolve = null;
+  let workerLastSeenAt = 0;
+  const workerOnline = () => Date.now() - workerLastSeenAt < 15000;
+  const openRun = () => state.runs.find(run => ['queued', 'starting', 'running'].includes(run.status));
 
   async function waitForPreview(run, item, message, status) {
     item.status = status;
@@ -66,7 +69,7 @@ export function createPostingService({ state, persist, products, regions, localP
       }
       if (changed) await persist();
     },
-    getActive() { return { run: state.runs.find(run => run.id === activeRun) ?? null, localPreviewAvailable }; },
+    getActive() { return { run: state.runs.find(run => run.id === activeRun) ?? (!localPreviewAvailable ? openRun() : null) ?? null, localPreviewAvailable, workerOnline: !localPreviewAvailable && workerOnline() }; },
     list(offset = 0, limit = 20) {
       const safeOffset = Math.max(0, Number.parseInt(offset, 10) || 0);
       const safeLimit = Math.min(50, Math.max(1, Number.parseInt(limit, 10) || 20));
@@ -77,7 +80,8 @@ export function createPostingService({ state, persist, products, regions, localP
     },
     get(id) { return requireFound(state.runs.find(item => item.id === id), 'Không tìm thấy lượt đăng.'); },
     async start(input) {
-      if (activeRun) throw new AppError('Đang có lượt đăng khác chạy.', 409);
+      if (activeRun || openRun()) throw new AppError('Đang có lượt đăng khác chạy hoặc chờ worker.', 409);
+      if (!localPreviewAvailable && !workerOnline()) throw new AppError('Worker trên Mac chưa kết nối. Chạy npm run worker trên Mac rồi thử lại.', 503);
       const product = products.get(input.productId);
       const region = regions.get(input.regionId);
       const dryRun = input.dryRun === true;
@@ -90,20 +94,84 @@ export function createPostingService({ state, persist, products, regions, localP
       const run = {
         id: randomUUID(), productId: product.id, productName: product.name, dryRun,
         regionId: region.id, regionName: region.name, caption, images: [...images],
-        status: 'starting', startedAt: new Date().toISOString(), finishedAt: null, nextAt: null,
+        status: localPreviewAvailable ? 'starting' : 'queued', startedAt: new Date().toISOString(), finishedAt: null, nextAt: null,
         items: region.groups.map(group => ({ groupId: group.id, groupName: group.name, url: group.url, status: 'pending' }))
       };
-      state.runs.unshift(run); activeRun = run.id; stopRequested = false; await persist();
-      void executeRun(run, caption, images).catch(error => console.error('Lỗi lượt đăng:', error));
+      state.runs.unshift(run); stopRequested = false; await persist();
+      if (localPreviewAvailable) {
+        activeRun = run.id;
+        void executeRun(run, caption, images).catch(error => console.error('Lỗi lượt đăng:', error));
+      }
       return run;
     },
-    stop(id) {
-      if (activeRun !== id) throw new AppError('Lượt đăng này không đang chạy.', 409);
-      stopRequested = true; previewResolve?.();
+    async stop(id) {
+      const run = this.get(id);
+      if (localPreviewAvailable) {
+        if (activeRun !== id) throw new AppError('Lượt đăng này không đang chạy.', 409);
+        stopRequested = true; previewResolve?.();
+        return;
+      }
+      if (!['queued', 'running'].includes(run.status)) throw new AppError('Lượt đăng này không đang chạy.', 409);
+      run.stopRequested = true;
+      if (run.status === 'queued' || !workerOnline()) {
+        run.status = 'stopped'; run.finishedAt = new Date().toISOString();
+        for (const item of run.items) if (['pending', 'running'].includes(item.status)) item.status = 'cancelled';
+      }
+      await persist();
     },
     continue(id) {
       if (activeRun !== id || !previewResolve) throw new AppError('Chưa có bản xem thử đang chờ.', 409);
       previewResolve();
+    },
+    nextForWorker() {
+      if (localPreviewAvailable) throw new AppError('Worker chỉ dùng với Railway.', 409);
+      workerLastSeenAt = Date.now();
+      return { run: state.runs.find(run => run.status === 'queued') ?? null };
+    },
+    workerHeartbeat() {
+      if (localPreviewAvailable) throw new AppError('Worker chỉ dùng với Railway.', 409);
+      workerLastSeenAt = Date.now();
+      return { ok: true };
+    },
+    async claimForWorker(id) {
+      if (localPreviewAvailable) throw new AppError('Worker chỉ dùng với Railway.', 409);
+      workerLastSeenAt = Date.now();
+      const run = this.get(id);
+      if (run.status !== 'queued') throw new AppError('Lượt đăng đã được nhận hoặc đã dừng.', 409);
+      run.status = 'running';
+      await persist();
+      return run;
+    },
+    workerControl(id) {
+      workerLastSeenAt = Date.now();
+      const run = this.get(id);
+      return { stopRequested: run.stopRequested === true, status: run.status };
+    },
+    async reportFromWorker(id, index, input) {
+      workerLastSeenAt = Date.now();
+      const run = this.get(id);
+      if (run.status !== 'running') throw new AppError('Lượt đăng không còn hoạt động.', 409);
+      const item = run.items[index];
+      if (!item) throw new AppError('Không tìm thấy group trong lượt đăng.', 404);
+      if (!['running', 'submitted', 'failed', 'cancelled'].includes(input.status)) throw new AppError('Trạng thái group không hợp lệ.');
+      item.status = input.status;
+      if (input.status === 'running') item.startedAt = new Date().toISOString();
+      if (input.status !== 'running') item.finishedAt = new Date().toISOString();
+      if (typeof input.message === 'string') item.message = input.message.slice(0, 2000);
+      run.nextAt = input.nextAt ?? null;
+      await persist();
+      return this.workerControl(id);
+    },
+    async finishFromWorker(id, input) {
+      workerLastSeenAt = Date.now();
+      const run = this.get(id);
+      if (run.status !== 'running') throw new AppError('Lượt đăng không còn hoạt động.', 409);
+      run.status = input.error ? 'failed' : run.stopRequested ? 'stopped' : 'finished';
+      if (input.error) run.error = String(input.error).slice(0, 2000);
+      for (const item of run.items) if (item.status === 'pending') item.status = 'cancelled';
+      run.finishedAt = new Date().toISOString(); run.nextAt = null;
+      await persist();
+      return run;
     }
   };
 }
