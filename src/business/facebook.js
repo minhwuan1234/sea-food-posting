@@ -52,9 +52,10 @@ export async function postToGroup(context, groupUrl, caption, mediaNames, option
       if (addPhotos) { await addPhotos.click(); await page.waitForTimeout(2000); }
       const input = dialog.locator('input[type="file"]').first();
       await input.waitFor({ state: 'attached', timeout: 10000 });
+      const loadMedia = options.loadMedia ?? mediaBuffer;
       const files = await Promise.all(mediaNames.map(async name => ({
         name, mimeType: mediaMime(name),
-        buffer: await mediaBuffer(name)
+        buffer: await loadMedia(name)
       })));
       await input.setInputFiles(files);
       await page.waitForTimeout(2000);

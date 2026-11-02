@@ -23,7 +23,7 @@ Railway nhận yêu cầu và lưu tiến độ. Playwright chạy trên Mac đ�
 npm run worker
 ```
 
-Nhập `APP_PASSWORD` của giao diện Railway khi Terminal hỏi. Mật khẩu không hiện khi gõ và không được lưu vào repo. Giữ Terminal mở trong lúc đăng. Trang `/dang-bai` sẽ hiện **Worker Mac đã kết nối**; nút Đăng chỉ mở khi worker online. Khi bạn bấm Đăng, Railway xếp lượt đăng vào hàng chờ, worker nhận và xử lý lần lượt từng group. Có thể đặt `REMOTE_URL` nếu dùng domain Railway khác.
+Nhập `APP_PASSWORD` của giao diện Railway khi Terminal hỏi. Mật khẩu không hiện khi gõ và không được lưu vào repo. Giữ Terminal mở trong lúc đăng. Trang `/dang-bai` sẽ hiện **Worker Mac đã kết nối**; nút Đăng chỉ mở khi worker online. Khi bạn bấm Đăng, Railway xếp lượt đăng vào hàng chờ. Worker tải ảnh/video đã lưu trong PostgreSQL trên Railway, kiểm tra đủ tệp, rồi mở Chromium trên Mac để đăng lần lượt từng group. Có thể đặt `REMOTE_URL` nếu dùng domain Railway khác. Sau khi cập nhật mã worker, dừng tiến trình cũ bằng Ctrl+C và chạy lại `npm run worker`.
 
 ## Triển khai Railway
 

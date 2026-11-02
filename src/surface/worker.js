@@ -1,6 +1,7 @@
 import { stdin, stdout } from 'node:process';
 import { createInterface } from 'node:readline/promises';
 import { launchFacebook, postToGroup } from '../business/facebook.js';
+import { createRemoteMediaLoader } from './remote-media.js';
 
 const base = (process.env.REMOTE_URL || 'https://sea-food-posting-production.up.railway.app').replace(/\/$/, '');
 const remote = new URL(base);
@@ -74,6 +75,8 @@ async function processRun(queued) {
   let error;
   let needsReview = false;
   try {
+    const loadMedia = createRemoteMediaLoader({ base, authorization });
+    for (const name of run.images) await loadMedia(name);
     browser = await launchFacebook();
     for (const [index, item] of run.items.entries()) {
       const control = await request(`/runs/${run.id}/control`);
@@ -83,6 +86,7 @@ async function processRun(queued) {
       let message;
       try {
         message = await postToGroup(browser.context, item.url, run.caption, run.images, {
+          loadMedia,
           onError: async cause => {
             if (!cause.uncertain) return;
             try { await request(`/runs/${run.id}/items/${index}`, 'POST', { status: 'needs_review', message: cause.message }); }
